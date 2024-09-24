@@ -58,5 +58,43 @@ func GetEmpByID(ctx *gin.Context) {
 
 	// Return the employee data as a JSON response
 	ctx.JSON(200, employee)
+}
 
+func DeleteEmployee(ctx *gin.Context) {
+	var employee models.Employee
+	id := ctx.Param("id")
+	if err := initializers.DB.Delete(&employee, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.JSON(400, gin.H{"error": "Employee not found"})
+		} else {
+			ctx.JSON(500, gin.H{"error": "Database error"})
+		}
+		return
+	}
+	ctx.JSON(200, gin.H{
+		"msg": "Successfully deleted",
+	})
+}
+
+func UpdateEmployee(ctx *gin.Context) {
+	var employee models.Employee
+	var body struct {
+		Name  string
+		Email string
+	}
+	ctx.Bind(&body)
+	id := ctx.Param("id")
+	initializers.DB.First(&employee, id)
+	if err := initializers.DB.Model(&employee).Updates(models.Employee{Name: body.Name, Email: body.Email}).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.JSON(400, gin.H{"error": "Employee not found"})
+		} else {
+			ctx.JSON(500, gin.H{"error": "Database error"})
+		}
+		return
+	}
+
+	ctx.JSON(200, gin.H{
+		"employee": employee,
+	})
 }
